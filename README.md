@@ -1,66 +1,165 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+See Documentation here - https://aamarpay.readme.io/reference/initiate-payment-json
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### # CSRF Token Error / 419
+In Laravel, you can handle CSRF Token Errors (status code 419) by customizing the "VerifyCsrfToken middleware", which is located in the "app/Http/Middleware/VerifyCsrfToken.php" file. To address this error, you need to declare the success, fail, and cancel URLs/routes in the middleware.
 
-## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```
+<?php
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+namespace App\Http\Middleware;
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 
-## Learning Laravel
+class VerifyCsrfToken extends Middleware
+{
+    /**
+     * The URIs that should be excluded from CSRF verification.
+     *
+     * @var array<int, string>
+     */
+    protected $except = [
+        'success',
+        'fail',
+        'cancel'
+    ];
+}
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Handle Session Log Out Error in Laravel
+The error is related to the 'same_site' and 'secure' options in the config/session.php configuration file.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+<pre>
+Change 'secure' => env('SESSION_SECURE_COOKIE'), to 'secure' => true;<br>
+Change 'same_site' => 'lax', to 'same_site' => 'none';
+</pre>
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Update routes/web.php file
 
-## Laravel Sponsors
+``` 
+Route::get('/payment', [PaymentController::class,'payment'])->name('payment');
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Route::post('/success', [PaymentController::class,'success'])->name('success');
+Route::post('/fail', [PaymentController::class,'fail'])->name('fail');
+Route::post('/cancel', [PaymentController::class,'cancel'])->name('cancel');
 
-### Premium Partners
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+### Create PaymentController.php file and update it by the following code
 
-## Contributing
+``` 
+<?php
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+namespace App\Http\Controllers;
 
-## Code of Conduct
+use Illuminate\Http\Request;
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+class PaymentController extends Controller
+{
+    public function payment(Request $request)
+    {
+        $store_id      = config('amarpay.store_id');
+        $signature_kay = config('amarpay.signature_kay');
 
-## Security Vulnerabilities
+        $transaction_id = rand(000000000000, 999999999999);
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+        $url = 'https://sandbox.aamarpay.com/jsonpost.php';
+        //For Live Transection Use "https://secure.aamarpay.com/jsonpost.php"
 
-## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS =>'{
+            "store_id": "'.$store_id.'",
+            "tran_id": "'.$transaction_id.'",
+            "success_url": "'.route('success').'",
+            "fail_url": "'.route('fail').'",
+            "cancel_url": "'.route('cancel').'",
+            "amount": "10",
+            "currency": "BDT",
+            "signature_key": "'.$signature_kay.'",
+            "desc": "Merchant Registration Payment",
+            "cus_name": "Nazmul",
+            "cus_email": "nazmul@gmail.com",
+            "cus_add1": "House A-55 Road 10",
+            "cus_add2": "Jhenaidah, Khulna, Bangladesh",
+            "cus_city": "Jhenaidah",
+            "cus_state": "Jhenaidah",
+            "cus_postcode": "7200",
+            "cus_country": "Bangladesh",
+            "cus_phone": "+88001700000001",
+            "type": "json"
+        }',
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        $responseObject = json_decode($response, true);
+
+        if (isset($responseObject['payment_url']) && $responseObject['payment_url'] != null) {
+            return redirect()->away($responseObject['payment_url']);
+        }else{
+            return redirect()->route('home')->with('error', 'Payment Url Generation Failed!');
+        }
+
+    }
+
+    //Get success response
+    public function success(Request $request)
+    {
+
+        $request_id    = $request['mer_txnid'];
+        $store_id      = config('amarpay.store_id');
+        $signature_kay = config('amarpay.signature_kay');
+
+        $url = "https://sandbox.aamarpay.com/api/v1/trxcheck/request.php?request_id=$request_id&store_id=$store_id&signature_key=$signature_kay&type=json";
+        //For Live Transection Use "http://secure.aamarpay.com/api/v1/trxcheck/request.php"
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+//        echo $response;
+        return redirect()->route('home')->with('success', 'Order placed successfully');
+    }
+
+    //get failure response
+    public function fail(Request $request)
+    {
+        return redirect()->route('home')->with('error', 'Order Failed!');
+    }
+
+    //
+    public function cancel(Request $request)
+    {
+        return redirect()->route('home')->with('warning', 'Order cancelled!');
+    }
+}
+
+```
