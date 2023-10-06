@@ -34,6 +34,22 @@ Change 'secure' => env('SESSION_SECURE_COOKIE'), to 'secure' => true;<br>
 Change 'same_site' => 'lax', to 'same_site' => 'none';
 </pre>
 
+### Update .env file
+``` 
+STORE_ID= Your store id goes here
+SIGNATURE_KEY= Your signature key goes here
+```
+
+### Create a file in config/amarpay.php and update it by the following code
+``` 
+<?php
+
+return [
+    'store_id'      => env('STORE_ID'),
+    'signature_kay' => env('SIGNATURE_KEY'),
+];
+```
+
 ### Update routes/web.php file
 
 ``` 
